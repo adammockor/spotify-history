@@ -43,6 +43,15 @@ def build_date_from_pieces(row):
     return dt.date()
 
 
+def clear_data():
+    # clear all cached @st.cache_data functions
+    st.cache_data.clear()
+
+    # reset uploader so no files are selected anymore
+    if "history_files" in st.session_state:
+        del st.session_state["history_files"]
+
+
 # Filter for the minimum minutes played grouped by artist
 st.title("🎁 Spotify History 🎶")
 st.markdown("Deep dive into your all-time listening data.")
@@ -78,7 +87,10 @@ change_cols = {
 }
 
 history = st.file_uploader(
-    "Upload your Spotify listening history", type="json", accept_multiple_files=True
+    "Upload your Spotify listening history",
+    type="json",
+    accept_multiple_files=True,
+    key="history_files",
 )
 
 
@@ -115,6 +127,7 @@ def get_all_data():
 #     )
 # else:
 all_data = get_all_data()
+st.button("Clear data", on_click=clear_data)
 
 
 all_data = all_data.rename(
@@ -223,14 +236,16 @@ with st.expander("Top Artists Raw Data"):
 TOP_SONG_N = 50
 
 top_songs = (
-    all_data_full_songs.groupby(["artistName", "trackName"])["msPlayed"]
-    .count()
-    .sort_values(ascending=False)
+    all_data_full_songs.groupby(["artistName", "trackName"], as_index=False)
+    .agg(Listens=("msPlayed", "count"))
+    .sort_values("Listens", ascending=False)
 )
-top_songs = top_songs.rename("Listens")
-top_songs = top_songs.reset_index()
-top_songs["rank"] = top_songs["Listens"].rank(ascending=False)
-top_songs_order = top_songs.sort_values("rank")["trackName"].unique().tolist()[0:TOP_SONG_N]
+
+# Add ranking
+top_songs["rank"] = top_songs["Listens"].rank(method="first", ascending=False)
+
+# Compute order of tracks for charts
+top_songs_order = top_songs.sort_values("rank").head(TOP_SONG_N)["trackName"].tolist()
 
 day_chart = (
     alt.Chart(top_songs.head(TOP_SONG_N))
@@ -572,14 +587,20 @@ st.subheader(f"Track Leaderboard for {year_select}")
 
 # Dataframe with tracknames, total minutes, and total plays
 track_leaderboard = (
-    heatmap_data.groupby(["trackName"])
+    heatmap_data.groupby(["trackName", "artistName"])  # <-- include artist
     .agg({"minutesPlayed": "sum", "endTime": "count"})
     .reset_index()
-    .rename(columns={"endTime": "Listens", "minutesPlayed": "Total Minutes", "trackName": "Track"})
+    .rename(
+        columns={
+            "endTime": "Listens",
+            "minutesPlayed": "Total Minutes",
+            "trackName": "Track",
+            "artistName": "Artist",
+        }
+    )
     .sort_values("Total Minutes", ascending=False)
-    .set_index("Track")
+    .set_index("Track")  # Track stays as the index
     .sort_values("Listens", ascending=False)
-    # Format minutes
     .style.format({"Total Minutes": "{:.1f}"})
 )
 st.dataframe(track_leaderboard, use_container_width=True)
