@@ -7,7 +7,7 @@ from data_processing import get_month_weeks, build_date_from_pieces # Import hel
 
 def create_top_artists_chart(df: pd.DataFrame, top_artists_order: list, corner_radius: int) -> alt.Chart:
     chart = (
-        alt.Chart(df.head(40))
+        alt.Chart(df.head(40).reset_index().assign(rank=lambda x: x.index + 1))
         .mark_bar(width=40, cornerRadius=corner_radius)
         .encode(
             y=alt.Y(
@@ -33,6 +33,11 @@ def create_top_artists_chart(df: pd.DataFrame, top_artists_order: list, corner_r
                 scale=alt.Scale(scheme="viridis"),
                 legend=None,
             ),
+            tooltip=[
+                alt.Tooltip("rank", title="Order"),
+                alt.Tooltip("artistName:N", title="Artist"),
+                alt.Tooltip("Hours:Q", format=",.0f", title="Hours"),
+            ],
         )
         .properties(height=500)
     )
@@ -51,7 +56,12 @@ def create_top_songs_chart(df: pd.DataFrame, top_songs_order: list, top_artists_
                 axis=alt.Axis(labelAngle=0),
                 scale=alt.Scale(domain=(0, df["Listens"].max() * 1.2)),
             ),
-            y=alt.Y("trackName", title="Track", axis=alt.Axis(labels=False), sort=top_songs_order),
+            y=alt.Y(
+                "trackName",
+                title="Track",
+                axis=alt.Axis(labels=False),
+                sort=top_songs_order,
+            ),
             color=alt.Color(
                 "artistName:N",
                 title="Artist",
@@ -61,6 +71,7 @@ def create_top_songs_chart(df: pd.DataFrame, top_songs_order: list, top_artists_
             ),
             order=alt.Order("rank", sort="ascending"),
             tooltip=[
+                alt.Tooltip("rank", title="Order"),
                 alt.Tooltip("trackName:N", title="Track"),
                 alt.Tooltip("artistName:N", title="Artist"),
                 alt.Tooltip("Listens:Q", title="# Plays"),

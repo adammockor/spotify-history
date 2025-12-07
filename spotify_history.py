@@ -144,7 +144,7 @@ def main():
     )
 
     st.markdown("---")
-    st.subheader("Top 40 Songs")
+    st.subheader(f"Top {TOP_SONG_N} Songs")
     day_chart = create_top_songs_chart(
         top_songs_df, top_songs_order, top_artists_order, CORNER_RADIUS, TOP_SONG_N
     )
