@@ -4,15 +4,17 @@ from streamlit_extras.badges import badge
 
 # --- Custom Modules ---
 from analysis import (
+    compute_artist_stats,
+    compute_lifetime_top_albums,
     compute_lifetime_top_tracks,
     compute_top_albums,
     compute_top_artists,
     compute_top_songs,
+    compute_yearly_album_leaderboard,
     compute_yearly_artist_stats,
     compute_yearly_track_leaderboard,
     get_artist_data,
     get_artist_rank,
-    compute_lifetime_artist_stats,
     get_yearly_artist_rank,
 )
 from data_processing import load_and_process_data
@@ -205,7 +207,7 @@ def main():
     st.write("Dig a bit deeper into your favorite artists")
 
     artists = get_artist_data(all_data, heatmap_artist)
-    artist_stats = compute_lifetime_artist_stats(artists)
+    artist_stats = compute_artist_stats(artists)
 
     col0, col1, col2, col3 = st.columns(4)
     rank = get_artist_rank(all_data, heatmap_artist)
@@ -217,6 +219,15 @@ def main():
 
     bar_chart = create_minutes_played_by_month_chart(artists, heatmap_artist)
     st.altair_chart(bar_chart, use_container_width=True)
+
+    st.subheader(f"Lifetime Top Albums by {heatmap_artist}")
+
+    lifetime_top_albums = compute_lifetime_top_albums(artists)
+
+    st.dataframe(
+        lifetime_top_albums.style.format({"Total_Minutes": "{:.1f}"}),
+        use_container_width=True,
+    )
 
     st.subheader(f"Lifetime Top Songs by {heatmap_artist}")
 
@@ -273,6 +284,15 @@ def main():
         heatmap_data_yearly, DAYS_OF_WEEK, CORNER_RADIUS, heatmap_artist, year_select
     )
     st.altair_chart(artist_heat, use_container_width=True)
+
+    st.subheader(f"Album Leaderboard for {year_select}")
+
+    yearly_album_leaderboard = compute_yearly_album_leaderboard(heatmap_data_yearly)
+
+    st.dataframe(
+        yearly_album_leaderboard.style.format({"Total_Minutes": "{:.1f}"}),
+        use_container_width=True,
+    )
 
     st.subheader(f"Track Leaderboard for {year_select}")
 
