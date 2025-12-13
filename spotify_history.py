@@ -25,6 +25,7 @@ from charts import (
     create_minutes_played_by_month_chart,
     build_heatmap,
 )
+from utils import get_album_art
 
 pd.set_option("mode.chained_assignment", None)
 
@@ -158,6 +159,32 @@ def main():
             top_albums["order"],
             CORNER_RADIUS,
         )
+
+        st.subheader("Top 5 Albums")
+
+        top_5_albums = top_albums["df"].head(10)
+
+        cols = st.columns(10)
+
+        for col, (_, row) in zip(cols, top_5_albums.iterrows()):
+            with col:
+                art_url = get_album_art(
+                    row["albumName"],
+                    row["artistName"],
+                )
+
+                if art_url:
+                    st.image(art_url, use_container_width=True)
+                else:
+                    st.markdown("🖼️ _No artwork_")
+
+                st.markdown(
+                    f"""
+                    **{row['albumName']}**  
+                    {row['artistName']}  
+                    {row['hours']:.1f} h
+                    """
+                )
 
         st.altair_chart(top_albums_chart, use_container_width=True)
 
