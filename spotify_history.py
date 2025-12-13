@@ -332,6 +332,19 @@ def main():
         use_container_width=True,
     )
 
+    st.markdown("---")
+
+    st.caption(
+        "Originally inspired by "
+        "[Tyler Simons](https://share.streamlit.io/user/tyler-simons)"
+    )
+
+    badge(
+        type="github",
+        name="adammockor/spotify-history",
+        url="https://github.com/adammockor/spotify-history",
+    )
+
 
 if __name__ == "__main__":
     main()
