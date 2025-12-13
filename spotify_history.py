@@ -1,9 +1,20 @@
 import pandas as pd
 import streamlit as st
-import calendar
 from streamlit_extras.badges import badge
 
 # --- Custom Modules ---
+from analysis import (
+    compute_lifetime_top_tracks,
+    compute_top_artists,
+    compute_top_songs,
+    compute_yearly_artist_stats,
+    compute_yearly_track_leaderboard,
+    get_artist_data,
+    get_artist_order,
+    get_artist_rank,
+    compute_lifetime_artist_stats,
+    get_yearly_artist_rank,
+)
 from data_processing import load_and_process_data
 from charts import (
     create_top_artists_chart,
@@ -89,26 +100,8 @@ def main():
         st.info("👆 Upload your Spotify listening history to get started!")
         st.stop()
 
-    all_data_full_songs = all_data.copy()
-
     # --- Data Calculations for Metrics and Charts ---
     # Calculate top artists for ordering and display
-    grouped_artist_total = (
-        all_data.groupby(["artistName"])["minutesPlayed"]
-        .sum(numeric_only=True)
-        .sort_values(ascending=False)
-    )
-    top_artist = grouped_artist_total.index[0]
-    top_artists_total_hours = (grouped_artist_total / 60).rename("Hours")
-
-    # Merge to get rank and order
-    all_data_with_rank = all_data.merge(
-        top_artists_total_hours.reset_index(), on="artistName", how="left"
-    )
-    all_data_with_rank["rank"] = all_data_with_rank["Hours"].rank(ascending=False)
-    top_artists_order = (
-        all_data_with_rank.sort_values("rank")["artistName"].unique().tolist()
-    )
 
     min_year, max_year = all_data["year"].min(), all_data["year"].max()
 
@@ -125,41 +118,39 @@ def main():
     # === UI: Top Artists Section ===
     st.markdown("---")
     st.subheader("Top Artists")
+
+    top_artists = compute_top_artists(all_data)
+
     minutes_played_chart = create_top_artists_chart(
-        top_artists_total_hours.reset_index(), top_artists_order, CORNER_RADIUS
+        top_artists["hours"].reset_index(),
+        top_artists["order"],
+        CORNER_RADIUS,
     )
     st.altair_chart(minutes_played_chart, use_container_width=True)
     with st.expander("Top Artists Raw Data"):
-        st.write(top_artists_total_hours)
+        st.write(top_artists["hours"])
 
     # === UI: Top Songs Section ===
     TOP_SONG_N = 50
-    top_songs_df = all_data_full_songs.groupby(
-        ["artistName", "trackName"], as_index=False
-    ).agg(Listens=("msPlayed", "count"))
-    top_songs_df = top_songs_df.sort_values("Listens", ascending=False)
-    top_songs_df["rank"] = top_songs_df["Listens"].rank(method="first", ascending=False)
-    top_songs_order = (
-        top_songs_df.sort_values("rank").head(TOP_SONG_N)["trackName"].tolist()
-    )
 
     st.markdown("---")
     st.subheader(f"Top {TOP_SONG_N} Songs")
+    top_songs = compute_top_songs(all_data, 50)
+
     day_chart = create_top_songs_chart(
-        top_songs_df, top_songs_order, top_artists_order, CORNER_RADIUS, TOP_SONG_N
+        top_songs["df"],
+        top_songs["order"],
+        top_artists["order"],
+        CORNER_RADIUS,
+        TOP_SONG_N,
     )
     st.altair_chart(day_chart, use_container_width=True)
     with st.expander("Top Song Raw Data"):
-        st.write(top_songs_df)
+        st.write(top_songs["df"])
 
     # === UI: Artist Analysis Section ===
     st.markdown("---")
-    top_artist_order_select = (
-        all_data.groupby("artistName")["minutesPlayed"]
-        .sum(numeric_only=True)
-        .sort_values(ascending=False)
-        .index.to_list()
-    )
+    top_artist_order_select = get_artist_order(all_data)
 
     heatmap_artist = st.selectbox(
         "Select Artist", ["All Artists"] + top_artist_order_select
@@ -167,51 +158,32 @@ def main():
     st.title(f"Analysis for {heatmap_artist}")
     st.write("Dig a bit deeper into your favorite artists")
 
-    if heatmap_artist == "All Artists":
-        heatmap_data = all_data
-        all_artist_raw = all_data
-    else:
-        heatmap_data = all_data[all_data["artistName"] == heatmap_artist]
-        all_artist_raw = all_data.query(f"artistName == '{heatmap_artist}'")
+    heatmap_data = get_artist_data(all_data, heatmap_artist)
+    all_artist_raw = heatmap_data
 
-    total_lifetime_hours = heatmap_data["minutesPlayed"].sum() / 60
-    total_unique_tracks = heatmap_data["trackName"].nunique()
-    most_listened_year = (
-        heatmap_data.groupby("year")["minutesPlayed"]
-        .sum(numeric_only=True)
-        .sort_values(ascending=False)
-        .index[0]
-    )
+    artist_stats = compute_lifetime_artist_stats(heatmap_data)
+
+    most_listened_year = artist_stats["most_listened_year"]
 
     col0, col1, col2, col3 = st.columns(4)
-    if heatmap_artist == "All Artists":
-        col0.metric(f"Rank", "-")
-    else:
-        col0.metric(f"Rank", f"{top_artist_order_select.index(heatmap_artist) + 1}")
-    col1.metric("Total Hours", f"{total_lifetime_hours:.2f}")
-    col2.metric("Total Unique Tracks", total_unique_tracks)
-    col3.metric("Most Listened Year", most_listened_year)
+    rank = get_artist_rank(all_data, heatmap_artist)
+    col0.metric("Rank", "-" if rank is None else rank)
+
+    col1.metric("Total Hours", f"{artist_stats['hours']:.2f}")
+    col2.metric("Total Unique Tracks", artist_stats["unique_tracks"])
+    col3.metric("Most Listened Year", artist_stats["most_listened_year"])
 
     bar_chart = create_minutes_played_by_month_chart(all_artist_raw, heatmap_artist)
     st.altair_chart(bar_chart, use_container_width=True)
 
-    top_songs_artist = all_artist_raw.groupby(
-        ["trackName", "artistName"], as_index=False
-    ).agg(minutesPlayed=("minutesPlayed", "sum"), date=("date", "count"))
-    top_songs_artist = top_songs_artist.rename(
-        columns={
-            "date": "Listens",
-            "minutesPlayed": "Total Minutes",
-            "artistName": "Artist",
-            "trackName": "Track",
-        }
-    )
-    top_songs_artist = top_songs_artist.sort_values(by="Listens", ascending=False)
-    top_songs_artist = top_songs_artist.drop("Artist", axis=1)
-    top_songs_artist = top_songs_artist.set_index("Track")
-    top_songs_artist = top_songs_artist.style.format({"Total Minutes": "{:.1f}"})
     st.subheader(f"Lifetime Top Songs by {heatmap_artist}")
-    st.dataframe(top_songs_artist, use_container_width=True)
+
+    lifetime_top_tracks = compute_lifetime_top_tracks(all_artist_raw)
+
+    st.dataframe(
+        lifetime_top_tracks.style.format({"Total_Minutes": "{:.1f}"}),
+        use_container_width=True,
+    )
 
     # === UI: Yearly Analysis Section ===
     st.markdown("---")
@@ -221,38 +193,37 @@ def main():
     year_select = st.selectbox(
         f"Select year for deeper analysis", sorted_years_reversed, top_year_index
     )
-    heatmap_data_yearly = all_artist_raw[all_artist_raw["year"] == year_select]
 
     st.title(f"{heatmap_artist} in {year_select}")
-
-    total_listened_hours_yearly = heatmap_data_yearly["minutesPlayed"].sum() / 60
-
     st.subheader("Stats")
 
     col1_yearly, col2_yearly, col3_yearly = st.columns(3)
 
-    yearly_rank = (
-        all_data_with_rank[all_data_with_rank["year"] == year_select]
-        .groupby(["artistName"])
-        .sum(numeric_only=True)
-        .sort_values("minutesPlayed", ascending=False)
-        .reset_index()
+    yearly_rank = get_yearly_artist_rank(
+        all_data,
+        heatmap_artist,
+        year_select,
     )
-    yearly_rank["rank"] = yearly_rank["minutesPlayed"].rank(ascending=False)
-    yearly_rank = yearly_rank[yearly_rank["artistName"] == heatmap_artist]
 
-    if heatmap_artist == "All Artists":
-        col1_yearly.metric(f"Artist Rank in {year_select}", "-")
-    else:
-        col1_yearly.metric(
-            f"Artist Rank in {year_select}", f"{yearly_rank['rank'].values[0]:.0f}"
-        )
+    yearly_stats = compute_yearly_artist_stats(
+        all_data,
+        heatmap_artist,
+        year_select,
+    )
+
+    heatmap_data_yearly = all_artist_raw[all_artist_raw["year"] == year_select]
+
+    col1_yearly.metric(
+        f"Artist Rank in {year_select}",
+        "-" if yearly_rank is None else yearly_rank,
+    )
     col2_yearly.metric(
-        f"Hours Played in {year_select}", f"{total_listened_hours_yearly:.0f}"
+        f"Hours Played in {year_select}",
+        f"{yearly_stats['hours']:.0f}",
     )
     col3_yearly.metric(
         f"Unique Tracks Played in {year_select}",
-        f"{len(heatmap_data_yearly['trackName'].unique()):.0f}",
+        yearly_stats["unique_tracks"],
     )
 
     artist_heat = build_heatmap(
@@ -262,29 +233,12 @@ def main():
 
     st.subheader(f"Track Leaderboard for {year_select}")
 
-    track_leaderboard_yearly = heatmap_data_yearly.groupby(
-        ["trackName", "artistName"]
-    ).agg(minutesPlayed=("minutesPlayed", "sum"), endTime=("endTime", "count"))
-    track_leaderboard_yearly = track_leaderboard_yearly.reset_index()
-    track_leaderboard_yearly = track_leaderboard_yearly.rename(
-        columns={
-            "endTime": "Listens",
-            "minutesPlayed": "Total Minutes",
-            "artistName": "Artist",
-            "trackName": "Track",
-        }
+    yearly_track_leaderboard = compute_yearly_track_leaderboard(heatmap_data_yearly)
+
+    st.dataframe(
+        yearly_track_leaderboard.style.format({"Total_Minutes": "{:.1f}"}),
+        use_container_width=True,
     )
-    track_leaderboard_yearly = track_leaderboard_yearly.sort_values(
-        "Total Minutes", ascending=False
-    )
-    track_leaderboard_yearly = track_leaderboard_yearly.set_index("Track")
-    track_leaderboard_yearly = track_leaderboard_yearly.sort_values(
-        "Listens", ascending=False
-    )
-    track_leaderboard_yearly = track_leaderboard_yearly.style.format(
-        {"Total Minutes": "{:.1f}"}
-    )
-    st.dataframe(track_leaderboard_yearly, use_container_width=True)
 
 
 if __name__ == "__main__":
