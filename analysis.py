@@ -122,7 +122,7 @@ def compute_top_artists(df: pd.DataFrame) -> dict:
         .sort_values(ascending=False)
     )
 
-    artist_hours = (artist_minutes / 60).rename("Hours")
+    artist_hours = (artist_minutes / 60).rename("hours")
 
     artist_order = artist_hours.index.tolist()
 
@@ -130,7 +130,7 @@ def compute_top_artists(df: pd.DataFrame) -> dict:
         artist_hours.reset_index(),
         on="artistName",
         how="left",
-    ).assign(rank=lambda d: d["Hours"].rank(ascending=False))
+    ).assign(rank=lambda d: d["hours"].rank(ascending=False))
 
     return {
         "hours": artist_hours,

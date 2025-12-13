@@ -19,12 +19,12 @@ def create_top_artists_chart(df: pd.DataFrame, top_artists_order: list, corner_r
                 ),
             ),
             x=alt.X(
-                "Hours:Q",
+                "hours:Q",
                 title="Total Hours",
                 axis=alt.Axis(
                     format="d",
                 ),
-                scale=alt.Scale(domain=(0, df["Hours"].max() * 1.2)),
+                scale=alt.Scale(domain=(0, df["hours"].max() * 1.2)),
             ),
             color=alt.Color(
                 "artistName:N",
@@ -36,7 +36,7 @@ def create_top_artists_chart(df: pd.DataFrame, top_artists_order: list, corner_r
             tooltip=[
                 alt.Tooltip("rank", title="Order"),
                 alt.Tooltip("artistName:N", title="Artist"),
-                alt.Tooltip("Hours:Q", format=",.0f", title="Hours"),
+                alt.Tooltip("hours:Q", format=",.0f", title="Hours"),
             ],
         )
         .properties(height=500)

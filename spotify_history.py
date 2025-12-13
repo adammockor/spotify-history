@@ -10,7 +10,6 @@ from analysis import (
     compute_yearly_artist_stats,
     compute_yearly_track_leaderboard,
     get_artist_data,
-    get_artist_order,
     get_artist_rank,
     compute_lifetime_artist_stats,
     get_yearly_artist_rank,
@@ -150,7 +149,7 @@ def main():
 
     # === UI: Artist Analysis Section ===
     st.markdown("---")
-    top_artist_order_select = get_artist_order(all_data)
+    top_artist_order_select = top_artists["order"]
 
     heatmap_artist = st.selectbox(
         "Select Artist", ["All Artists"] + top_artist_order_select
