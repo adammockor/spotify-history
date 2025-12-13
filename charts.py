@@ -114,7 +114,7 @@ def create_top_tracks_chart(
                 sort=top_tracks_order,
             ),
             color=alt.Color(
-                "trackNamer:N",
+                "trackName:N",
                 title="Artist",
                 scale=alt.Scale(scheme="viridis"),
                 sort=top_artists_order,

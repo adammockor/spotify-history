@@ -50,7 +50,11 @@ CHANGE_COLS = {
 }
 
 # --- Streamlit Page Configuration ---
-st.set_page_config(layout="wide", page_title="My Spotify History")
+st.set_page_config(
+    layout="wide",
+    page_title="Spotify History",
+    page_icon="🎧",
+)
 
 
 # --- Helper Functions ---
@@ -62,16 +66,21 @@ def clear_data():
 
 def main():
     # === UI: Header Section ===
-    st.title("🎁 Spotify History 🎶")
-    st.markdown("Deep dive into your all-time listening data.")
+    st.title("🎧 Spotify History")
+    st.markdown(
+        "Explore your personal Spotify listening history — top artists, albums, tracks, and listening patterns over time."
+    )
 
     col1, col2 = st.columns(2)
-    col1.markdown(
-        """
-        ## About
-        This app helps you dig into your listening history to help you learn about yourself. It shows you your top tracks and artists and visualizes your listening history. We **do not** save your data and all the code is __open source__. I hope you enjoy it!
-        """
-    )
+    with col1:
+        col1.markdown(
+            """
+            ## About
+            - No login required  
+            - Your data stays local  
+            - Open source
+            """
+        )
     with col2:
         col2.markdown(
             """
