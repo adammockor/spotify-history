@@ -9,10 +9,10 @@ from analysis import (
     compute_lifetime_top_tracks,
     compute_top_albums,
     compute_top_artists,
-    compute_top_songs,
+    compute_top_tracks,
     compute_yearly_album_leaderboard,
     compute_yearly_artist_stats,
-    compute_yearly_songs_leaderboard,
+    compute_yearly_tracks_leaderboard,
     get_artist_data,
     get_artist_rank,
     get_yearly_artist_rank,
@@ -21,7 +21,7 @@ from data_processing import load_and_process_data
 from charts import (
     create_top_albums_chart,
     create_top_artists_chart,
-    create_top_songs_chart,
+    create_top_tracks_chart,
     create_minutes_played_by_month_chart,
     build_heatmap,
 )
@@ -69,7 +69,7 @@ def main():
     col1.markdown(
         """
         ## About
-        This app helps you dig into your listening history to help you learn about yourself. It shows you your top songs and artists and visualizes your listening history. We **do not** save your data and all the code is __open source__. I hope you enjoy it!
+        This app helps you dig into your listening history to help you learn about yourself. It shows you your top tracks and artists and visualizes your listening history. We **do not** save your data and all the code is __open source__. I hope you enjoy it!
         """
     )
     with col2:
@@ -164,32 +164,6 @@ def main():
             CORNER_RADIUS,
         )
 
-        st.subheader("Top 5 Albums")
-
-        top_5_albums = top_albums["df"].head(10)
-
-        cols = st.columns(10)
-
-        for col, (_, row) in zip(cols, top_5_albums.iterrows()):
-            with col:
-                art_url = get_album_art(
-                    row["albumName"],
-                    row["artistName"],
-                )
-
-                if art_url:
-                    st.image(art_url, use_container_width=True)
-                else:
-                    st.markdown("🖼️ _No artwork_")
-
-                st.markdown(
-                    f"""
-                    **{row['albumName']}**  
-                    {row['artistName']}  
-                    {format_minutes_human(row["hours"] * 60)}
-                    """
-                )
-
         st.altair_chart(top_albums_chart, use_container_width=True)
 
         with st.expander("Top Albums Raw Data"):
@@ -198,19 +172,19 @@ def main():
         # --- Top Songs ---
         st.subheader(f"Top {top_song_n} Songs{title_suffix}")
 
-        top_songs = compute_top_songs(df, top_song_n)
+        top_tracks = compute_top_tracks(df, top_song_n)
 
-        top_songs_chart = create_top_songs_chart(
-            top_songs["df"],
-            top_songs["order"],
+        top_tracks_chart = create_top_tracks_chart(
+            top_tracks["df"],
+            top_tracks["order"],
             top_artists["order"],
             CORNER_RADIUS,
             top_song_n,
         )
-        st.altair_chart(top_songs_chart, use_container_width=True)
+        st.altair_chart(top_tracks_chart, use_container_width=True)
 
         with st.expander("Top Song Raw Data"):
-            st.write(top_songs["df"])
+            st.write(top_tracks["df"])
 
     st.header("Top Overview")
 
@@ -346,7 +320,7 @@ def main():
 
     st.subheader(f"Track Leaderboard for {year_select}")
 
-    yearly_track_leaderboard = compute_yearly_songs_leaderboard(heatmap_data_yearly)
+    yearly_track_leaderboard = compute_yearly_tracks_leaderboard(heatmap_data_yearly)
 
     display_yearly_track_leaderboard = yearly_track_leaderboard.copy()
     display_yearly_track_leaderboard["Listening Time"] = (

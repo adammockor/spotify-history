@@ -5,7 +5,7 @@
 This project is an interactive Streamlit application designed to visualize and analyze Spotify listening history. It allows users to upload their personal Spotify data (JSON files) and explore their listening habits through various charts and metrics. The application runs locally, ensuring data privacy.
 
 **Key Features:**
-*   **Global Analysis:** Overview of top artists and top songs by play count and duration.
+*   **Global Analysis:** Overview of top artists and top tracks by play count and duration.
 *   **Artist Deep Dive:** Detailed stats for specific artists, including lifetime hours, unique tracks, and monthly listening trends.
 *   **Temporal Analysis:** Heatmaps showing listening habits by day of the week and week of the year.
 *   **Interactive Filtering:** Drill down by artist and year.

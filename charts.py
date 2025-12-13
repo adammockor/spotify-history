@@ -90,7 +90,13 @@ def create_top_albums_chart(
     return chart + text
 
 
-def create_top_songs_chart(df: pd.DataFrame, top_songs_order: list, top_artists_order: list, corner_radius: int, top_n: int = 50) -> alt.Chart:
+def create_top_tracks_chart(
+    df: pd.DataFrame,
+    top_tracks_order: list,
+    top_artists_order: list,
+    corner_radius: int,
+    top_n: int = 50,
+) -> alt.Chart:
     chart = (
         alt.Chart(df.head(top_n))
         .mark_bar(cornerRadius=corner_radius)
@@ -105,10 +111,10 @@ def create_top_songs_chart(df: pd.DataFrame, top_songs_order: list, top_artists_
                 "trackName",
                 title="Track",
                 axis=alt.Axis(labels=False),
-                sort=top_songs_order,
+                sort=top_tracks_order,
             ),
             color=alt.Color(
-                "artistName:N",
+                "trackNamer:N",
                 title="Artist",
                 scale=alt.Scale(scheme="viridis"),
                 sort=top_artists_order,
@@ -126,11 +132,12 @@ def create_top_songs_chart(df: pd.DataFrame, top_songs_order: list, top_artists_
     )
     text = chart.mark_text(align="left", baseline="middle", dx=3, fontSize=12).encode(
         x=alt.X("Listens", title="# Plays"),
-        y=alt.Y("trackName", title="Track", stack="zero", sort=top_songs_order),
+        y=alt.Y("trackName", title="Track", stack="zero", sort=top_tracks_order),
         text=alt.Text("trackName", title="Track"),
         order=alt.Order("rank", sort="ascending"),
     )
     return chart + text
+
 
 def create_minutes_played_by_month_chart(df: pd.DataFrame, artist_name: str) -> alt.Chart:
     all_artist = df.copy()

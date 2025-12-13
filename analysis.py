@@ -272,13 +272,13 @@ def get_track_rank(
     return minutes.index.get_loc(key) + 1
 
 
-def compute_top_songs(df: pd.DataFrame, top_n: int = 50) -> dict:
+def compute_top_tracks(df: pd.DataFrame, top_n: int = 50) -> dict:
     """
     Returns one row per (artist, track), ordered by listens.
     Rank is explicit and 1-based.
     """
 
-    songs_df = (
+    tracks_df = (
         df.groupby(["artistName", "trackName"], as_index=False)
         .agg(Listens=("msPlayed", "count"))
         .sort_values("Listens", ascending=False)
@@ -287,13 +287,13 @@ def compute_top_songs(df: pd.DataFrame, top_n: int = 50) -> dict:
     )
 
     return {
-        "df": songs_df,
-        "order": songs_df.head(top_n)["trackName"].tolist(),
+        "df": tracks_df,
+        "order": tracks_df.head(top_n)["trackName"].tolist(),
         "top_n": top_n,
     }
 
 
-def compute_yearly_songs_leaderboard(df: pd.DataFrame) -> pd.DataFrame:
+def compute_yearly_tracks_leaderboard(df: pd.DataFrame) -> pd.DataFrame:
     """
     Returns yearly track leaderboard dataframe.
     Columns:
