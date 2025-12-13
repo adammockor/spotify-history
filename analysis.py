@@ -119,7 +119,6 @@ def compute_lifetime_top_tracks(df: pd.DataFrame) -> pd.DataFrame:
             Total_Minutes=("minutesPlayed", "sum"),
         )
         .sort_values("Listens", ascending=False)
-        .drop(columns="artistName")
         .set_index("trackName")
     )
 
@@ -194,22 +193,22 @@ def compute_top_albums(df: pd.DataFrame) -> dict:
 
 def compute_lifetime_top_albums(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Returns lifetime top albums table for a given artist dataframe.
-    Columns:
-        - Album (index)
-        - Total Minutes
+    Reference implementation:
+    - album identity = (artist, album)
+    - sort by minutes
+    - display hours
     """
-    tracks = (
+
+    albums = (
         df.groupby(["albumName", "artistName"], as_index=False)
         .agg(
             Total_Minutes=("minutesPlayed", "sum"),
         )
         .sort_values("Total_Minutes", ascending=False)
-        .drop(columns="artistName")
         .set_index("albumName")
     )
 
-    return tracks
+    return albums
 
 
 def compute_yearly_album_leaderboard(df: pd.DataFrame) -> pd.DataFrame:
@@ -228,7 +227,6 @@ def compute_yearly_album_leaderboard(df: pd.DataFrame) -> pd.DataFrame:
             ["Total_Minutes"],
             ascending=False,
         )
-        .drop(columns="artistName")
         .set_index("albumName")
     )
 
@@ -295,7 +293,7 @@ def compute_top_songs(df: pd.DataFrame, top_n: int = 50) -> dict:
     }
 
 
-def compute_yearly_track_leaderboard(df: pd.DataFrame) -> pd.DataFrame:
+def compute_yearly_songs_leaderboard(df: pd.DataFrame) -> pd.DataFrame:
     """
     Returns yearly track leaderboard dataframe.
     Columns:
@@ -313,7 +311,6 @@ def compute_yearly_track_leaderboard(df: pd.DataFrame) -> pd.DataFrame:
             ["Total_Minutes", "Listens"],
             ascending=False,
         )
-        .drop(columns="artistName")
         .set_index("trackName")
     )
 

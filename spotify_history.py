@@ -12,7 +12,7 @@ from analysis import (
     compute_top_songs,
     compute_yearly_album_leaderboard,
     compute_yearly_artist_stats,
-    compute_yearly_track_leaderboard,
+    compute_yearly_songs_leaderboard,
     get_artist_data,
     get_artist_rank,
     get_yearly_artist_rank,
@@ -181,7 +181,7 @@ def main():
         with st.expander("Top Song Raw Data"):
             st.write(top_songs["df"])
 
-    st.header("Overview")
+    st.header("Top Overview")
 
     tab_lifetime, tab_year = st.tabs(["Lifetime", f"{current_year}"])
 
@@ -296,7 +296,7 @@ def main():
 
     st.subheader(f"Track Leaderboard for {year_select}")
 
-    yearly_track_leaderboard = compute_yearly_track_leaderboard(heatmap_data_yearly)
+    yearly_track_leaderboard = compute_yearly_songs_leaderboard(heatmap_data_yearly)
 
     st.dataframe(
         yearly_track_leaderboard.style.format({"Total_Minutes": "{:.1f}"}),
