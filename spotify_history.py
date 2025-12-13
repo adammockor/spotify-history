@@ -5,6 +5,7 @@ from streamlit_extras.badges import badge
 # --- Custom Modules ---
 from analysis import (
     compute_lifetime_top_tracks,
+    compute_top_albums,
     compute_top_artists,
     compute_top_songs,
     compute_yearly_artist_stats,
@@ -16,6 +17,7 @@ from analysis import (
 )
 from data_processing import load_and_process_data
 from charts import (
+    create_top_albums_chart,
     create_top_artists_chart,
     create_top_songs_chart,
     create_minutes_played_by_month_chart,
@@ -39,6 +41,7 @@ DAYS_OF_WEEK = [
 CHANGE_COLS = {
     "master_metadata_track_name": "trackName",
     "master_metadata_album_artist_name": "artistName",
+    "master_metadata_album_album_name": "albumName",
     "ts": "endTime",
     "ms_played": "msPlayed",
 }
@@ -105,10 +108,12 @@ def main():
     year_df = all_data[all_data["year"] == current_year]
 
     top_artists = compute_top_artists(all_data)
+    top_albums = compute_top_albums(all_data)
 
     def render_top_section(
         df,
         top_artists,
+        top_albums,
         title_suffix="",
         top_song_n=50,
     ):
@@ -143,6 +148,20 @@ def main():
         with st.expander("Top Artists Raw Data"):
             st.write(top_artists["hours"])
 
+        # --- Top Albums ---
+        st.subheader(f"Top Albums{title_suffix}")
+
+        top_albums_chart = create_top_albums_chart(
+            top_albums["df"],
+            top_albums["order"],
+            CORNER_RADIUS,
+        )
+
+        st.altair_chart(top_albums_chart, use_container_width=True)
+
+        with st.expander("Top Albums Raw Data"):
+            st.write(top_albums["df"])
+
         # --- Top Songs ---
         st.subheader(f"Top {top_song_n} Songs{title_suffix}")
 
@@ -165,11 +184,14 @@ def main():
     tab_lifetime, tab_year = st.tabs(["Lifetime", f"{current_year}"])
 
     with tab_lifetime:
-        render_top_section(all_data, top_artists)
+        render_top_section(all_data, top_artists, top_albums)
 
     with tab_year:
         render_top_section(
-            year_df, compute_top_artists(year_df), title_suffix=f" – {current_year}"
+            year_df,
+            compute_top_artists(year_df),
+            compute_top_albums(year_df),
+            title_suffix=f" – {current_year}",
         )
 
     # === UI: Artist Analysis Section ===

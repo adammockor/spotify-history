@@ -139,6 +139,44 @@ def compute_top_artists(df: pd.DataFrame) -> dict:
     }
 
 
+def compute_top_albums(df: pd.DataFrame) -> dict:
+    """
+    Computes top albums by listening time.
+
+    One row = one album by one artist.
+
+    Returns:
+        - df: DataFrame with columns:
+            artistName
+            albumName
+            hours
+            rank
+            album_display
+        - order: list of album_display values in display order
+    """
+
+    album_minutes = (
+        df.groupby(["artistName", "albumName"])["minutesPlayed"]
+        .sum(numeric_only=True)
+        .sort_values(ascending=False)
+    )
+
+    albums_df = (
+        (album_minutes / 60)
+        .rename("hours")
+        .reset_index()
+        .assign(
+            rank=lambda d: range(1, len(d) + 1),
+            album_display=lambda d: d["albumName"] + " — " + d["artistName"],
+        )
+    )
+
+    return {
+        "df": albums_df,
+        "order": albums_df["album_display"].tolist(),
+    }
+
+
 def compute_top_songs(df: pd.DataFrame, top_n: int = 50) -> dict:
     top_songs_df = (
         df.groupby(["artistName", "trackName"], as_index=False)
