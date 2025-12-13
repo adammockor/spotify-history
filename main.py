@@ -81,7 +81,14 @@ def renderFooter():
 
 def main():
     # === UI: Header Section ===
-    st.title("🎧 Spotify History")
+    st.markdown(
+        """
+    <h1 style="margin-bottom: 0;">
+        🎧 <span style="color:#1DB954;">Spotify</span> History
+    </h1>
+    """,
+        unsafe_allow_html=True,
+    )
     st.markdown(
         "Explore your personal Spotify listening history — top artists, albums, tracks, and listening patterns over time."
     )
