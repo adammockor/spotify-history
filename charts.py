@@ -30,7 +30,7 @@ def create_top_artists_chart(df: pd.DataFrame, top_artists_order: list, corner_r
                 "artistName:N",
                 title="Artist",
                 sort=top_artists_order[0:40],
-                scale=alt.Scale(scheme="viridis"),
+                scale=alt.Scale(scheme="greens", reverse=True),
                 legend=None,
             ),
             tooltip=[
@@ -72,7 +72,7 @@ def create_top_albums_chart(
                 "album_display:N",
                 title="Album",
                 sort=top_albums_order[0:40],
-                scale=alt.Scale(scheme="viridis"),
+                scale=alt.Scale(scheme="greens", reverse=True),
                 legend=None,
             ),
             tooltip=[
@@ -116,7 +116,7 @@ def create_top_tracks_chart(
             color=alt.Color(
                 "trackName:N",
                 title="Artist",
-                scale=alt.Scale(scheme="viridis"),
+                scale=alt.Scale(scheme="greens", reverse=True),
                 sort=top_artists_order,
                 legend=None,
             ),
@@ -148,12 +148,26 @@ def create_minutes_played_by_month_chart(df: pd.DataFrame, artist_name: str) -> 
         alt.Chart(all_artist)
         .mark_bar()
         .encode(
-            x=alt.X("year_month:T", title="Date", axis=alt.Axis(labelAngle=0), timeUnit="yearmonth"),
-            y=alt.Y("minutesPlayed:Q", title="Minutes Played", axis=alt.Axis(format=".0f")),
+            x=alt.X(
+                "year_month:T",
+                title="Date",
+                axis=alt.Axis(labelAngle=0),
+                timeUnit="yearmonth",
+            ),
+            y=alt.Y(
+                "minutesPlayed:Q", title="Minutes Played", axis=alt.Axis(format=".0f")
+            ),
             tooltip=[
-                alt.Tooltip("year_month:T", title="Date", format="%b-%Y", timeUnit="yearmonth"),
+                alt.Tooltip(
+                    "year_month:T", title="Date", format="%b-%Y", timeUnit="yearmonth"
+                ),
                 alt.Tooltip("minutesPlayed:Q", title="Minutes Played", format=".0f"),
             ],
+            color=alt.Color(
+                "minutesPlayed:Q",
+                scale=alt.Scale(scheme="greens"),
+                legend=None,
+            ),
         )
         .properties(
             width=800,
@@ -246,7 +260,13 @@ def build_heatmap(heatmap_data: pd.DataFrame, days_of_week: list, corner_radius:
                 "min_bucket:O",
                 title="Minutes Played",
                 scale=alt.Scale(
-                    range=["#e0e0e0", "#90caf9", "#64b5f6", "#42a5f5", "#1e88e5"],
+                    range=[
+                        "#1a1a1a",  # almost nothing
+                        "#2a2a2a",  # very low
+                        "#1db95433",  # low (green w/ alpha)
+                        "#1db95466",  # medium
+                        "#1DB954",  # high
+                    ],
                     domain=bucket_labels,
                 ),
                 legend=alt.Legend(

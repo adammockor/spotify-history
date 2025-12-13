@@ -1,2 +1,9 @@
 [theme]
-base="light"
+base = "dark"
+
+primaryColor = "#1DB954"          # Spotify green
+backgroundColor = "#121212"       # Spotify dark background
+secondaryBackgroundColor = "#181818"
+textColor = "#FFFFFF"
+
+font = "sans serif"
