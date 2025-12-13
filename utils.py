@@ -93,7 +93,7 @@ def format_minutes_human(minutes: float | int) -> str:
         text.replace(" months", "M")
         .replace(" month", "M")
         .replace(" days", "D")
-        .replace(" day", "Dr")
+        .replace(" day", "D")
         .replace(" hours", "h")
         .replace(" hour", "h")
         .replace(" minutes", "m")
