@@ -64,6 +64,21 @@ def clear_data():
         del st.session_state["history_files"]
 
 
+def renderFooter():
+    st.markdown("---")
+
+    st.caption(
+        "Originally inspired by "
+        "[Tyler Simons](https://share.streamlit.io/user/tyler-simons)"
+    )
+
+    badge(
+        type="github",
+        name="adammockor/spotify-history",
+        url="https://github.com/adammockor/spotify-history",
+    )
+
+
 def main():
     # === UI: Header Section ===
     st.title("🎧 Spotify History")
@@ -111,6 +126,7 @@ def main():
             st.stop()
     else:
         st.info("👆 Upload your Spotify listening history to get started!")
+        renderFooter()
         st.stop()
 
     # --- Data Calculations for Metrics and Charts ---
@@ -341,18 +357,7 @@ def main():
         use_container_width=True,
     )
 
-    st.markdown("---")
-
-    st.caption(
-        "Originally inspired by "
-        "[Tyler Simons](https://share.streamlit.io/user/tyler-simons)"
-    )
-
-    badge(
-        type="github",
-        name="adammockor/spotify-history",
-        url="https://github.com/adammockor/spotify-history",
-    )
+    renderFooter()
 
 
 if __name__ == "__main__":
