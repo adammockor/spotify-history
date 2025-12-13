@@ -82,4 +82,23 @@ def get_album_art(album: str, artist: str) -> str | None:
     return results[0].get("artworkUrl100")
 
 
+def format_minutes_human(minutes: float | int) -> str:
+    """
+    Convert minutes to a human-readable duration.
+    """
+    seconds = int(minutes * 60)
+    text = humanize.precisedelta(seconds, format="%0.0f")
 
+    return (
+        text.replace(" months", "M")
+        .replace(" month", "M")
+        .replace(" days", "D")
+        .replace(" day", "Dr")
+        .replace(" hours", "h")
+        .replace(" hour", "h")
+        .replace(" minutes", "m")
+        .replace(" minute", "m")
+        .replace(" seconds", "s")
+        .replace(" second", "s")
+        .replace(" and ", " ")
+    )

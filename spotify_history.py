@@ -25,7 +25,7 @@ from charts import (
     create_minutes_played_by_month_chart,
     build_heatmap,
 )
-from utils import get_album_art
+from utils import format_minutes_human, get_album_art
 
 pd.set_option("mode.chained_assignment", None)
 
@@ -128,14 +128,18 @@ def main():
         # === UI: Global Metrics Section ===
         min_year, max_year = df["year"].min(), df["year"].max()
 
-        col1, col2, col3, col4 = st.columns([4, 2, 3, 2])
+        col1, col2, col3, col4 = st.columns([2, 2, 2, 5])
         col1.metric("Timespan", f"{min_year} - {max_year}")
         col2.metric("Artists", df["artistName"].nunique())
         col3.metric(
             "Tracks",
             df.groupby(["artistName", "trackName"]).size().reset_index().shape[0],
         )
-        col4.metric("Hours", int(df["minutesPlayed"].sum() / 60))
+
+        col4.metric(
+            "Listening Time",
+            format_minutes_human(df["minutesPlayed"].sum()),
+        )
 
         # --- Top Artists ---
         st.subheader(f"Top Artists{title_suffix}")
@@ -182,7 +186,7 @@ def main():
                     f"""
                     **{row['albumName']}**  
                     {row['artistName']}  
-                    {row['hours']:.1f} h
+                    {format_minutes_human(row["hours"] * 60)}
                     """
                 )
 
@@ -236,11 +240,13 @@ def main():
     artists = get_artist_data(all_data, heatmap_artist)
     artist_stats = compute_artist_stats(artists)
 
-    col0, col1, col2, col3 = st.columns(4)
+    col0, col1, col2, col3 = st.columns([2, 3, 2, 2])
     rank = get_artist_rank(all_data, heatmap_artist)
     col0.metric("Rank", "-" if rank is None else rank)
-
-    col1.metric("Total Hours", f"{artist_stats['hours']:.2f}")
+    col1.metric(
+        f"Listening Time",
+        format_minutes_human(artist_stats["hours"] * 60),
+    )
     col2.metric("Total Unique Tracks", artist_stats["unique_tracks"])
     col3.metric("Most Listened Year", artist_stats["most_listened_year"])
 
@@ -251,8 +257,13 @@ def main():
 
     lifetime_top_albums = compute_lifetime_top_albums(artists)
 
+    display_lifetime_top_albums = lifetime_top_albums.copy()
+    display_lifetime_top_albums["Listening Time"] = display_lifetime_top_albums[
+        "Total_Minutes"
+    ].apply(format_minutes_human)
+
     st.dataframe(
-        lifetime_top_albums.style.format({"Total_Minutes": "{:.1f}"}),
+        display_lifetime_top_albums.drop(columns=["Total_Minutes"]),
         use_container_width=True,
     )
 
@@ -260,8 +271,13 @@ def main():
 
     lifetime_top_tracks = compute_lifetime_top_tracks(artists)
 
+    display_lifetime_top_tracks = lifetime_top_tracks.copy()
+    display_lifetime_top_tracks["Listening Time"] = display_lifetime_top_tracks[
+        "Total_Minutes"
+    ].apply(format_minutes_human)
+
     st.dataframe(
-        lifetime_top_tracks.style.format({"Total_Minutes": "{:.1f}"}),
+        display_lifetime_top_tracks.drop(columns=["Total_Minutes"]),
         use_container_width=True,
     )
 
@@ -298,10 +314,12 @@ def main():
         f"Artist Rank in {year_select}",
         "-" if yearly_rank is None else yearly_rank,
     )
+
     col2_yearly.metric(
-        f"Hours Played in {year_select}",
-        f"{yearly_stats['hours']:.0f}",
+        f"Listening Time in {year_select}",
+        format_minutes_human(yearly_stats["hours"] * 60),
     )
+
     col3_yearly.metric(
         f"Unique Tracks Played in {year_select}",
         yearly_stats["unique_tracks"],
@@ -316,8 +334,13 @@ def main():
 
     yearly_album_leaderboard = compute_yearly_album_leaderboard(heatmap_data_yearly)
 
+    display_yearly_album_leaderboard = yearly_album_leaderboard.copy()
+    display_yearly_album_leaderboard["Listening Time"] = (
+        display_yearly_album_leaderboard["Total_Minutes"].apply(format_minutes_human)
+    )
+
     st.dataframe(
-        yearly_album_leaderboard.style.format({"Total_Minutes": "{:.1f}"}),
+        display_yearly_album_leaderboard.drop(columns=["Total_Minutes"]),
         use_container_width=True,
     )
 
@@ -325,8 +348,13 @@ def main():
 
     yearly_track_leaderboard = compute_yearly_songs_leaderboard(heatmap_data_yearly)
 
+    display_yearly_track_leaderboard = yearly_track_leaderboard.copy()
+    display_yearly_track_leaderboard["Listening Time"] = (
+        display_yearly_track_leaderboard["Total_Minutes"].apply(format_minutes_human)
+    )
+
     st.dataframe(
-        yearly_track_leaderboard.style.format({"Total_Minutes": "{:.1f}"}),
+        display_yearly_track_leaderboard.drop(columns=["Total_Minutes"]),
         use_container_width=True,
     )
 
