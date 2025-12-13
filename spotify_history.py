@@ -75,7 +75,6 @@ def main():
         3. Run the app and visualize your music history!
         """
         )
-        badge("twitter", "TYLERSlMONS", "https://twitter.com/TYLERSlMONS")
 
     # === Data Loading Section ===
     history_files = st.file_uploader(
@@ -102,50 +101,76 @@ def main():
     # --- Data Calculations for Metrics and Charts ---
     # Calculate top artists for ordering and display
 
-    min_year, max_year = all_data["year"].min(), all_data["year"].max()
-
-    # === UI: Global Metrics Section ===
-    col1, col2, col3, col4 = st.columns([4, 2, 3, 2])
-    col1.metric("Timespan", f"{min_year} - {max_year}")
-    col2.metric("Artists", all_data["artistName"].nunique())
-    col3.metric(
-        "Tracks",
-        all_data.groupby(["artistName", "trackName"]).size().reset_index().shape[0],
-    )
-    col4.metric("Hours", int(all_data["minutesPlayed"].sum() / 60))
-
-    # === UI: Top Artists Section ===
-    st.markdown("---")
-    st.subheader("Top Artists")
+    current_year = all_data["year"].max()
+    year_df = all_data[all_data["year"] == current_year]
 
     top_artists = compute_top_artists(all_data)
 
-    minutes_played_chart = create_top_artists_chart(
-        top_artists["hours"].reset_index(),
-        top_artists["order"],
-        CORNER_RADIUS,
-    )
-    st.altair_chart(minutes_played_chart, use_container_width=True)
-    with st.expander("Top Artists Raw Data"):
-        st.write(top_artists["hours"])
+    def render_top_section(
+        df,
+        top_artists,
+        title_suffix="",
+        top_song_n=50,
+    ):
+        """
+        Renders Top Artists + Top Songs section for a given dataframe.
+        Assumes df already represents the desired time slice (lifetime, year, etc.).
+        """
 
-    # === UI: Top Songs Section ===
-    TOP_SONG_N = 50
+        # === UI: Global Metrics Section ===
+        min_year, max_year = df["year"].min(), df["year"].max()
 
-    st.markdown("---")
-    st.subheader(f"Top {TOP_SONG_N} Songs")
-    top_songs = compute_top_songs(all_data, 50)
+        col1, col2, col3, col4 = st.columns([4, 2, 3, 2])
+        col1.metric("Timespan", f"{min_year} - {max_year}")
+        col2.metric("Artists", df["artistName"].nunique())
+        col3.metric(
+            "Tracks",
+            df.groupby(["artistName", "trackName"]).size().reset_index().shape[0],
+        )
+        col4.metric("Hours", int(df["minutesPlayed"].sum() / 60))
 
-    day_chart = create_top_songs_chart(
-        top_songs["df"],
-        top_songs["order"],
-        top_artists["order"],
-        CORNER_RADIUS,
-        TOP_SONG_N,
-    )
-    st.altair_chart(day_chart, use_container_width=True)
-    with st.expander("Top Song Raw Data"):
-        st.write(top_songs["df"])
+        # --- Top Artists ---
+        st.subheader(f"Top Artists{title_suffix}")
+
+        minutes_played_chart = create_top_artists_chart(
+            top_artists["hours"].reset_index(),
+            top_artists["order"],
+            CORNER_RADIUS,
+        )
+
+        st.altair_chart(minutes_played_chart, use_container_width=True)
+
+        with st.expander("Top Artists Raw Data"):
+            st.write(top_artists["hours"])
+
+        # --- Top Songs ---
+        st.subheader(f"Top {top_song_n} Songs{title_suffix}")
+
+        top_songs = compute_top_songs(df, top_song_n)
+
+        top_songs_chart = create_top_songs_chart(
+            top_songs["df"],
+            top_songs["order"],
+            top_artists["order"],
+            CORNER_RADIUS,
+            top_song_n,
+        )
+        st.altair_chart(top_songs_chart, use_container_width=True)
+
+        with st.expander("Top Song Raw Data"):
+            st.write(top_songs["df"])
+
+    st.header("Overview")
+
+    tab_lifetime, tab_year = st.tabs(["Lifetime", f"{current_year}"])
+
+    with tab_lifetime:
+        render_top_section(all_data, top_artists)
+
+    with tab_year:
+        render_top_section(
+            year_df, compute_top_artists(year_df), title_suffix=f" – {current_year}"
+        )
 
     # === UI: Artist Analysis Section ===
     st.markdown("---")
@@ -154,15 +179,11 @@ def main():
     heatmap_artist = st.selectbox(
         "Select Artist", ["All Artists"] + top_artist_order_select
     )
-    st.title(f"Analysis for {heatmap_artist}")
+    st.header(f"Analysis for {heatmap_artist}")
     st.write("Dig a bit deeper into your favorite artists")
 
-    heatmap_data = get_artist_data(all_data, heatmap_artist)
-    all_artist_raw = heatmap_data
-
-    artist_stats = compute_lifetime_artist_stats(heatmap_data)
-
-    most_listened_year = artist_stats["most_listened_year"]
+    artists = get_artist_data(all_data, heatmap_artist)
+    artist_stats = compute_lifetime_artist_stats(artists)
 
     col0, col1, col2, col3 = st.columns(4)
     rank = get_artist_rank(all_data, heatmap_artist)
@@ -172,12 +193,12 @@ def main():
     col2.metric("Total Unique Tracks", artist_stats["unique_tracks"])
     col3.metric("Most Listened Year", artist_stats["most_listened_year"])
 
-    bar_chart = create_minutes_played_by_month_chart(all_artist_raw, heatmap_artist)
+    bar_chart = create_minutes_played_by_month_chart(artists, heatmap_artist)
     st.altair_chart(bar_chart, use_container_width=True)
 
     st.subheader(f"Lifetime Top Songs by {heatmap_artist}")
 
-    lifetime_top_tracks = compute_lifetime_top_tracks(all_artist_raw)
+    lifetime_top_tracks = compute_lifetime_top_tracks(artists)
 
     st.dataframe(
         lifetime_top_tracks.style.format({"Total_Minutes": "{:.1f}"}),
@@ -186,14 +207,15 @@ def main():
 
     # === UI: Yearly Analysis Section ===
     st.markdown("---")
-    sorted_years_reversed = sorted(all_artist_raw["year"].unique(), reverse=True)
-    top_year_index = sorted_years_reversed.index(most_listened_year)
+    sorted_years_reversed = sorted(artists["year"].unique(), reverse=True)
 
     year_select = st.selectbox(
-        f"Select year for deeper analysis", sorted_years_reversed, top_year_index
+        f"Select year for deeper analysis",
+        sorted_years_reversed,
+        # sorted_years_reversed.index(most_listened_year),
     )
 
-    st.title(f"{heatmap_artist} in {year_select}")
+    st.header(f"{heatmap_artist} in {year_select}")
     st.subheader("Stats")
 
     col1_yearly, col2_yearly, col3_yearly = st.columns(3)
@@ -210,7 +232,7 @@ def main():
         year_select,
     )
 
-    heatmap_data_yearly = all_artist_raw[all_artist_raw["year"] == year_select]
+    heatmap_data_yearly = artists[artists["year"] == year_select]
 
     col1_yearly.metric(
         f"Artist Rank in {year_select}",
