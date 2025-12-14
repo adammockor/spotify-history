@@ -5,14 +5,17 @@ import calendar
 
 from data_processing import get_month_weeks, build_date_from_pieces # Import helper functions
 
-def create_top_artists_chart(df: pd.DataFrame, top_artists_order: list, corner_radius: int) -> alt.Chart:
+
+def create_top_artists_chart(df: pd.DataFrame, corner_radius: int) -> alt.Chart:
+    top_artists = df.reset_index().assign(rank=lambda x: x.index + 1)
+    top_artists_list = top_artists["artistName"].to_list()
     chart = (
-        alt.Chart(df.head(40).reset_index().assign(rank=lambda x: x.index + 1))
+        alt.Chart(top_artists)
         .mark_bar(width=40, cornerRadius=corner_radius)
         .encode(
             y=alt.Y(
                 "artistName",
-                sort=top_artists_order[0:40],
+                sort=top_artists_list,
                 title="Artist",
                 axis=alt.Axis(
                     labels=False,
@@ -27,10 +30,10 @@ def create_top_artists_chart(df: pd.DataFrame, top_artists_order: list, corner_r
                 scale=alt.Scale(domain=(0, df["hours"].max() * 1.2)),
             ),
             color=alt.Color(
-                "artistName:N",
+                "hours:Q",
                 title="Artist",
-                sort=top_artists_order[0:40],
-                scale=alt.Scale(scheme="greens", reverse=True),
+                sort=top_artists_list,
+                scale=alt.Scale(scheme="greens"),
                 legend=None,
             ),
             tooltip=[
@@ -45,16 +48,16 @@ def create_top_artists_chart(df: pd.DataFrame, top_artists_order: list, corner_r
     return chart + text
 
 
-def create_top_albums_chart(
-    df: pd.DataFrame, top_albums_order: list, corner_radius: int
-) -> alt.Chart:
+def create_top_albums_chart(df: pd.DataFrame, corner_radius: int) -> alt.Chart:
+    top_albums = df.reset_index().assign(rank=lambda x: x.index + 1)
+    top_albums_list = top_albums["album_display"].to_list()
     chart = (
-        alt.Chart(df.head(40).reset_index().assign(rank=lambda x: x.index + 1))
+        alt.Chart(df.reset_index().assign(rank=lambda x: x.index + 1))
         .mark_bar(width=40, cornerRadius=corner_radius)
         .encode(
             y=alt.Y(
                 "album_display",
-                sort=top_albums_order[0:40],
+                sort=top_albums_list,
                 title="Album",
                 axis=alt.Axis(
                     labels=False,
@@ -69,10 +72,10 @@ def create_top_albums_chart(
                 scale=alt.Scale(domain=(0, df["hours"].max() * 1.2)),
             ),
             color=alt.Color(
-                "album_display:N",
+                "hours:Q",
                 title="Album",
-                sort=top_albums_order[0:40],
-                scale=alt.Scale(scheme="greens", reverse=True),
+                sort=top_albums_list,
+                scale=alt.Scale(scheme="greens"),
                 legend=None,
             ),
             tooltip=[
@@ -92,37 +95,32 @@ def create_top_albums_chart(
 
 def create_top_tracks_chart(
     df: pd.DataFrame,
-    top_tracks_order: list,
-    top_artists_order: list,
     corner_radius: int,
-    top_n: int = 50,
 ) -> alt.Chart:
+    top_tracks = df.reset_index().assign(rank=lambda x: x.index + 1)
+    top_tracks_list = top_tracks["trackName"].to_list()
     chart = (
-        alt.Chart(df.head(top_n))
+        alt.Chart(df.reset_index(drop=True).assign(rank=lambda x: x.index + 1))
         .mark_bar(cornerRadius=corner_radius)
         .encode(
             x=alt.X(
-                "Listens",
+                "Listens:Q",
                 title="# Plays",
-                axis=alt.Axis(labelAngle=0),
                 scale=alt.Scale(domain=(0, df["Listens"].max() * 1.2)),
             ),
             y=alt.Y(
-                "trackName",
+                "trackName:N",
                 title="Track",
+                sort=top_tracks_list,
                 axis=alt.Axis(labels=False),
-                sort=top_tracks_order,
             ),
             color=alt.Color(
-                "trackName:N",
-                title="Artist",
-                scale=alt.Scale(scheme="greens", reverse=True),
-                sort=top_artists_order,
+                "Listens:Q",
+                scale=alt.Scale(scheme="greens"),
+                sort=top_tracks_list,
                 legend=None,
             ),
-            order=alt.Order("rank", sort="ascending"),
             tooltip=[
-                alt.Tooltip("rank", title="Order"),
                 alt.Tooltip("trackName:N", title="Track"),
                 alt.Tooltip("artistName:N", title="Artist"),
                 alt.Tooltip("Listens:Q", title="# Plays"),
@@ -132,9 +130,13 @@ def create_top_tracks_chart(
     )
     text = chart.mark_text(align="left", baseline="middle", dx=3, fontSize=12).encode(
         x=alt.X("Listens", title="# Plays"),
-        y=alt.Y("trackName", title="Track", stack="zero", sort=top_tracks_order),
+        y=alt.Y(
+            "trackName",
+            title="Track",
+            stack="zero",
+            sort=top_tracks_list,
+        ),
         text=alt.Text("trackName", title="Track"),
-        order=alt.Order("rank", sort="ascending"),
     )
     return chart + text
 

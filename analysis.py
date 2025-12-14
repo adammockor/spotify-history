@@ -64,33 +64,20 @@ def get_yearly_artist_rank(
     return get_artist_rank(yearly_df, artist)
 
 
-def compute_top_artists(df: pd.DataFrame) -> dict:
+def compute_top_artists(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Computes all data needed for the 'Top Artists' section.
-    Returns plain data structures only.
+    Returns one row per artist, ordered by hours desc.
+    Columns:
+        - artistName
+        - hours
+        - rank
     """
+    minutes = aggregate_artist_minutes(df)
+    hours = (minutes / 60).rename("hours")
 
-    artist_minutes = (
-        df.groupby("artistName")["minutesPlayed"]
-        .sum(numeric_only=True)
-        .sort_values(ascending=False)
-    )
+    artists_df = hours.reset_index().assign(rank=lambda d: range(1, len(d) + 1))
 
-    artist_hours = (artist_minutes / 60).rename("hours")
-
-    artist_order = artist_hours.index.tolist()
-
-    top_artists_df = df.merge(
-        artist_hours.reset_index(),
-        on="artistName",
-        how="left",
-    ).assign(rank=lambda d: d["hours"].rank(ascending=False))
-
-    return {
-        "hours": artist_hours,
-        "order": artist_order,
-        "df": top_artists_df,
-    }
+    return artists_df
 
 
 def compute_artist_stats(df: pd.DataFrame) -> dict:
@@ -185,7 +172,7 @@ def get_yearly_album_rank(
     return get_album_rank(yearly_df, artist, album)
 
 
-def compute_top_albums(df: pd.DataFrame) -> dict:
+def compute_top_albums(df: pd.DataFrame) -> pd.DataFrame:
     """
     Returns one row per (artist, album), ordered by hours desc.
     Columns:
@@ -203,10 +190,7 @@ def compute_top_albums(df: pd.DataFrame) -> dict:
         album_display=lambda d: d["albumName"] + " — " + d["artistName"],
     )
 
-    return {
-        "df": albums_df,
-        "order": albums_df["album_display"].tolist(),
-    }
+    return albums_df
 
 
 def compute_lifetime_top_albums(df: pd.DataFrame, top_n: int = 100) -> pd.DataFrame:
@@ -271,34 +255,7 @@ def aggregate_track_minutes(df: pd.DataFrame) -> pd.Series:
     )
 
 
-def get_track_order(df: pd.DataFrame, top_n: int | None = None) -> list[str]:
-    """
-    Returns track names in descending listening order.
-    If top_n is provided, limits the result.
-    """
-    minutes = aggregate_track_minutes(df)
-    order = minutes.index.get_level_values("trackName").tolist()
-    return order if top_n is None else order[:top_n]
-
-
-def get_track_rank(
-    df: pd.DataFrame,
-    artist: str,
-    track: str,
-) -> int | None:
-    """
-    Returns 1-based rank of a track by total minutes.
-    """
-    minutes = aggregate_track_minutes(df)
-    key = (artist, track)
-
-    if key not in minutes.index:
-        return None
-
-    return minutes.index.get_loc(key) + 1
-
-
-def compute_top_tracks(df: pd.DataFrame, top_n: int = 50) -> dict:
+def compute_top_tracks(df: pd.DataFrame) -> pd.DataFrame:
     """
     Returns one row per (artist, track), ordered by listens.
     Rank is explicit and 1-based.
@@ -312,11 +269,7 @@ def compute_top_tracks(df: pd.DataFrame, top_n: int = 50) -> dict:
         .assign(rank=lambda d: range(1, len(d) + 1))
     )
 
-    return {
-        "df": tracks_df,
-        "order": tracks_df.head(top_n)["trackName"].tolist(),
-        "top_n": top_n,
-    }
+    return tracks_df
 
 
 def compute_tracks_leaderboard(

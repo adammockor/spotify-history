@@ -137,26 +137,21 @@ def main():
         renderFooter()
         st.stop()
 
-    # --- Data Calculations for Metrics and Charts ---
-    # Calculate top artists for ordering and display
-
-    current_year = all_data["year"].max()
-    year_df = all_data[all_data["year"] == current_year]
-
-    top_artists = compute_top_artists(all_data)
-    top_albums = compute_top_albums(all_data)
-
     def render_top_section(
         df,
         top_artists,
         top_albums,
+        top_tracks,
         title_suffix="",
-        top_song_n=50,
+        top_n=50,
     ):
         """
-        Renders Top Artists + Top Songs section for a given dataframe.
+        Renders Top Artists + Top Tracks section for a given dataframe.
         Assumes df already represents the desired time slice (lifetime, year, etc.).
         """
+        top_artists = top_artists.copy().head(top_n)
+        top_albums = top_albums.copy().head(top_n)
+        top_tracks = top_tracks.copy().head(top_n)
 
         # === UI: Global Metrics Section ===
         min_year, max_year = df["year"].min(), df["year"].max()
@@ -177,11 +172,10 @@ def main():
         )
 
         # --- Top Artists ---
-        st.subheader(f"Top Artists{title_suffix}")
+        st.subheader(f"Top {top_n} Artists{title_suffix}")
 
         minutes_played_chart = create_top_artists_chart(
-            top_artists["hours"].reset_index(),
-            top_artists["order"],
+            top_artists,
             CORNER_RADIUS,
         )
 
@@ -191,54 +185,62 @@ def main():
             st.write(top_artists["hours"])
 
         # --- Top Albums ---
-        st.subheader(f"Top Albums{title_suffix}")
+        st.subheader(f"Top {top_n} Albums{title_suffix}")
 
         top_albums_chart = create_top_albums_chart(
-            top_albums["df"],
-            top_albums["order"],
+            top_albums,
             CORNER_RADIUS,
         )
 
         st.altair_chart(top_albums_chart, width="stretch")
 
         with st.expander("Top Albums Raw Data"):
-            st.write(top_albums["df"])
+            st.write(top_albums)
 
-        # --- Top Songs ---
-        st.subheader(f"Top {top_song_n} Songs{title_suffix}")
-
-        top_tracks = compute_top_tracks(df, top_song_n)
+        # --- Top Tracks ---
+        st.subheader(f"Top {top_n} Tracks{title_suffix}")
 
         top_tracks_chart = create_top_tracks_chart(
-            top_tracks["df"],
-            top_tracks["order"],
-            top_artists["order"],
+            top_tracks,
             CORNER_RADIUS,
-            top_song_n,
         )
         st.altair_chart(top_tracks_chart, width="stretch")
 
-        with st.expander("Top Song Raw Data"):
-            st.write(top_tracks["df"])
+        with st.expander("Top Tracks Raw Data"):
+            st.write(top_tracks)
 
     st.header("Top Overview")
+
+    # --- Data Calculations for Metrics and Charts ---
+    # Calculate top artists for ordering and display
+
+    current_year = all_data["year"].max()
+    year_df = all_data[all_data["year"] == current_year]
+
+    top_n = 50
+
+    top_artists = compute_top_artists(all_data)
+    top_albums = compute_top_albums(all_data)
+    top_tracks = compute_top_tracks(all_data)
 
     tab_lifetime, tab_year = st.tabs(["Lifetime", f"{current_year}"])
 
     with tab_lifetime:
-        render_top_section(all_data, top_artists, top_albums)
+        render_top_section(all_data, top_artists, top_albums, top_tracks, top_n=top_n)
 
     with tab_year:
         render_top_section(
             year_df,
             compute_top_artists(year_df),
             compute_top_albums(year_df),
+            compute_top_tracks(year_df),
             title_suffix=f" – {current_year}",
+            top_n=top_n,
         )
 
     # === UI: Artist Analysis Section ===
     st.markdown("---")
-    top_artist_order_select = top_artists["order"]
+    top_artist_order_select = top_artists["artistName"].tolist()
 
     heatmap_artist = st.selectbox(
         "Select Artist", ["All Artists"] + top_artist_order_select
@@ -276,7 +278,7 @@ def main():
         width="stretch",
     )
 
-    st.subheader(f"Lifetime Top Songs by {heatmap_artist}")
+    st.subheader(f"Lifetime Top Tracks by {heatmap_artist}")
 
     lifetime_top_tracks = compute_lifetime_top_tracks(artists)
 
