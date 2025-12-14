@@ -62,7 +62,7 @@ st.set_page_config(
 # --- Helper Functions ---
 def reset_data():
     st.cache_data.clear()
-    st.session_state["data_source"] = "upload"
+    st.session_state["use_example_data"] = False
     st.session_state["uploader_key"] = f"history_files_{uuid.uuid4()}"
 
 
@@ -115,44 +115,37 @@ def main():
         """
         )
 
-    if "data_source" not in st.session_state:
-        st.session_state["data_source"] = "upload"  # default
-
-    data_source = st.radio(
-        "Data source",
-        ["upload", "example"],
-        format_func=lambda x: "Upload files" if x == "upload" else "Use example data",
-        horizontal=True,
-        key="data_source",
-    )
-
     history_files = st.file_uploader(
         "Upload your Spotify listening history",
         type="json",
         accept_multiple_files=True,
         key=st.session_state.get("uploader_key", "history_files_0"),
     )
+    st.info("👆 Upload your Spotify listening history to get started.")
 
-    st.button("Reset data", on_click=reset_data)
+    if not history_files:
+        st.caption("Don’t have your exports yet?")
+        if st.button("View example results"):
+            st.session_state["use_example_data"] = True
 
     all_data = pd.DataFrame()
 
-    if data_source == "example":
+    if history_files:
+        all_data = load_and_process_data(history_files, CHANGE_COLS)
+
+    elif st.session_state.get("use_example_data"):
         all_data = get_example_data("example_data", CHANGE_COLS)
 
-    elif data_source == "upload":
-        if history_files:
-            all_data = load_and_process_data(history_files, CHANGE_COLS)
-
-    # One gate: if no data, show help and stop
     if all_data.empty:
-        if data_source == "upload":
-            st.info("👆 Upload your Spotify listening history to get started!")
-        else:
-            st.info("Example data not found. Check `example_data_2/` is present.")
-
         renderFooter()
         st.stop()
+
+    st.button("Reset data", on_click=reset_data)
+
+    if st.session_state.get("use_example_data") and not history_files:
+        st.caption(
+            "Showing example data — upload your own files anytime to replace it."
+        )
 
     def render_top_section(
         df,
