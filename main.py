@@ -125,7 +125,7 @@ def main():
 
     if not history_files:
         st.caption("Don’t have your exports yet?")
-        if st.button("View example results"):
+        if st.button("Show example"):
             st.session_state["use_example_data"] = True
 
     all_data = pd.DataFrame()
@@ -140,7 +140,7 @@ def main():
         renderFooter()
         st.stop()
 
-    st.button("Reset data", on_click=reset_data)
+    st.button("Clear data", on_click=reset_data)
 
     if st.session_state.get("use_example_data") and not history_files:
         st.caption(
