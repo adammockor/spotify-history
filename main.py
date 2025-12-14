@@ -144,7 +144,7 @@ def main():
 
     if st.session_state.get("use_example_data") and not history_files:
         st.caption(
-            "Showing example data — upload your own files anytime to replace it."
+            "👇 Showing example data — upload your own files anytime to replace it."
         )
 
     def render_top_section(
