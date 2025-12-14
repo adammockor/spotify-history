@@ -201,7 +201,7 @@ def build_heatmap(heatmap_data: pd.DataFrame, days_of_week: list, corner_radius:
         ordered=True,
     )
     heatmap_agg = (
-        simple_heatmap_data.groupby(["week", "day_of_week_str", "year"])
+        simple_heatmap_data.groupby(["week", "day_of_week_str", "year"], observed=False)
         .sum(numeric_only=True)["minutesPlayed"]
         .reset_index()
     )
