@@ -1,3 +1,4 @@
+import calendar
 import pandas as pd
 import streamlit as st
 from streamlit_extras.badges import badge
@@ -10,9 +11,9 @@ from analysis import (
     compute_top_albums,
     compute_top_artists,
     compute_top_tracks,
-    compute_yearly_album_leaderboard,
+    compute_tracks_leaderboard,
+    compute_album_leaderboard,
     compute_yearly_artist_stats,
-    compute_yearly_tracks_leaderboard,
     get_artist_data,
     get_artist_rank,
     get_yearly_artist_rank,
@@ -25,7 +26,7 @@ from charts import (
     create_minutes_played_by_month_chart,
     build_heatmap,
 )
-from utils import format_minutes_human, get_album_art
+from utils import format_minutes_human
 
 pd.set_option("mode.chained_assignment", None)
 
@@ -338,9 +339,23 @@ def main():
     )
     st.altair_chart(artist_heat, width="stretch")
 
-    st.subheader(f"Album Leaderboard for {year_select}")
+    month_options = ["All months"] + [calendar.month_name[m] for m in range(1, 13)]
 
-    yearly_album_leaderboard = compute_yearly_album_leaderboard(heatmap_data_yearly)
+    month_select = st.selectbox("Filter by month", month_options)
+
+    month = (
+        None
+        if month_select == "All months"
+        else list(calendar.month_name).index(month_select)
+    )
+
+    month_label = "" if month is None else f" {calendar.month_name[month]}"
+
+    st.subheader(f"Album Leaderboard for {year_select}{month_label}")
+
+    yearly_album_leaderboard = compute_album_leaderboard(
+        heatmap_data_yearly, year_select, month
+    )
 
     display_yearly_album_leaderboard = yearly_album_leaderboard.copy()
     display_yearly_album_leaderboard["Listening Time"] = (
@@ -352,9 +367,11 @@ def main():
         width="stretch",
     )
 
-    st.subheader(f"Track Leaderboard for {year_select}")
+    st.subheader(f"Track Leaderboard for {year_select}{month_label}")
 
-    yearly_track_leaderboard = compute_yearly_tracks_leaderboard(heatmap_data_yearly)
+    yearly_track_leaderboard = compute_tracks_leaderboard(
+        heatmap_data_yearly, year_select, month
+    )
 
     display_yearly_track_leaderboard = yearly_track_leaderboard.copy()
     display_yearly_track_leaderboard["Listening Time"] = (
