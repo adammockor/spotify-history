@@ -159,9 +159,11 @@ def main():
 
         # === UI: Global Metrics Section ===
         min_year, max_year = df["year"].min(), df["year"].max()
+        min_date, max_date = df["date"].min(), df["date"].max()
 
         col1, col2, col3, col4 = st.columns([2, 2, 2, 5])
         col1.metric("Timespan", f"{min_year} - {max_year}")
+        col1.caption(f"{min_date} - {max_date}")
         col2.metric("Artists", df["artistName"].nunique())
         col3.metric(
             "Tracks",

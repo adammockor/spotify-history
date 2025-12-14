@@ -47,7 +47,7 @@ def load_and_process_data(
 
     # Add features
     all_data["endTime"] = pd.to_datetime(all_data["endTime"])
-    all_data["endTime"] = pd.Series([(i + timedelta(hours=16)) for i in all_data.endTime]) # This seems arbitrary, might need review
+    all_data["endTime"] = pd.to_datetime(all_data["endTime"], utc=True)
     all_data["date"] = [i.date() for i in all_data["endTime"]]
     all_data["dow"] = [i.weekday() for i in all_data["endTime"]]
     all_data["day_of_week_str"] = all_data["dow"].apply(lambda x: calendar.day_name[x])
