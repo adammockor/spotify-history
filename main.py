@@ -99,8 +99,8 @@ def main():
             """
             ## About
             - No login required  
-            - Your data stays local  
-            - Open source
+            - Your data is processed temporarily and never stored  
+            - Open source — all processing is visible in the code
             """
         )
     with col2:
