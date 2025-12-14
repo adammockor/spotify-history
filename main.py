@@ -1,4 +1,5 @@
 import calendar
+import uuid
 import pandas as pd
 import streamlit as st
 from streamlit_extras.badges import badge
@@ -18,7 +19,7 @@ from analysis import (
     get_artist_rank,
     get_yearly_artist_rank,
 )
-from data_processing import load_and_process_data
+from data_processing import get_example_data, load_and_process_data
 from charts import (
     create_top_albums_chart,
     create_top_artists_chart,
@@ -59,10 +60,10 @@ st.set_page_config(
 
 
 # --- Helper Functions ---
-def clear_data():
+def reset_data():
     st.cache_data.clear()
-    if "history_files" in st.session_state:
-        del st.session_state["history_files"]
+    st.session_state["data_source"] = "upload"
+    st.session_state["uploader_key"] = f"history_files_{uuid.uuid4()}"
 
 
 def renderFooter():
@@ -114,26 +115,42 @@ def main():
         """
         )
 
-    # === Data Loading Section ===
+    if "data_source" not in st.session_state:
+        st.session_state["data_source"] = "upload"  # default
+
+    data_source = st.radio(
+        "Data source",
+        ["upload", "example"],
+        format_func=lambda x: "Upload files" if x == "upload" else "Use example data",
+        horizontal=True,
+        key="data_source",
+    )
+
     history_files = st.file_uploader(
         "Upload your Spotify listening history",
         type="json",
         accept_multiple_files=True,
-        key="history_files",
+        key=st.session_state.get("uploader_key", "history_files_0"),
     )
 
+    st.button("Reset data", on_click=reset_data)
+
     all_data = pd.DataFrame()
-    if history_files:
-        try:
+
+    if data_source == "example":
+        all_data = get_example_data("example_data", CHANGE_COLS)
+
+    elif data_source == "upload":
+        if history_files:
             all_data = load_and_process_data(history_files, CHANGE_COLS)
-            st.button("Clear data", on_click=clear_data)
-        except Exception as e:
-            st.error(
-                f"Error processing uploaded files: {e}. Please ensure you've uploaded valid Spotify JSON files."
-            )
-            st.stop()
-    else:
-        st.info("👆 Upload your Spotify listening history to get started!")
+
+    # One gate: if no data, show help and stop
+    if all_data.empty:
+        if data_source == "upload":
+            st.info("👆 Upload your Spotify listening history to get started!")
+        else:
+            st.info("Example data not found. Check `example_data_2/` is present.")
+
         renderFooter()
         st.stop()
 
