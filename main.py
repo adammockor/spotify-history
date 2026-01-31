@@ -189,7 +189,7 @@ def main():
             CORNER_RADIUS,
         )
 
-        st.altair_chart(minutes_played_chart, width="stretch")
+        st.altair_chart(minutes_played_chart, use_container_width=True)
 
         with st.expander("Top Artists Raw Data"):
             st.write(top_artists["hours"])
@@ -202,7 +202,7 @@ def main():
             CORNER_RADIUS,
         )
 
-        st.altair_chart(top_albums_chart, width="stretch")
+        st.altair_chart(top_albums_chart, use_container_width=True)
 
         with st.expander("Top Albums Raw Data"):
             st.write(top_albums)
@@ -214,7 +214,7 @@ def main():
             top_tracks,
             CORNER_RADIUS,
         )
-        st.altair_chart(top_tracks_chart, width="stretch")
+        st.altair_chart(top_tracks_chart, use_container_width=True)
 
         with st.expander("Top Tracks Raw Data"):
             st.write(top_tracks)
@@ -272,7 +272,7 @@ def main():
     col3.metric("Most Listened Year", artist_stats["most_listened_year"])
 
     bar_chart = create_minutes_played_by_month_chart(artists, heatmap_artist)
-    st.altair_chart(bar_chart, width="stretch")
+    st.altair_chart(bar_chart, use_container_width=True)
 
     st.subheader(f"Lifetime Top Albums by {heatmap_artist}")
 
@@ -285,7 +285,7 @@ def main():
 
     st.dataframe(
         display_lifetime_top_albums.drop(columns=["Total_Minutes"]),
-        width="stretch",
+        use_container_width=True,
     )
 
     st.subheader(f"Lifetime Top Tracks by {heatmap_artist}")
@@ -299,7 +299,7 @@ def main():
 
     st.dataframe(
         display_lifetime_top_tracks.drop(columns=["Total_Minutes"]),
-        width="stretch",
+        use_container_width=True,
     )
 
     # === UI: Yearly Analysis Section ===
@@ -349,7 +349,7 @@ def main():
     artist_heat = build_heatmap(
         heatmap_data_yearly, DAYS_OF_WEEK, CORNER_RADIUS, heatmap_artist, year_select
     )
-    st.altair_chart(artist_heat, width="stretch")
+    st.altair_chart(artist_heat, use_container_width=True)
 
     month_options = ["All months"] + [calendar.month_name[m] for m in range(1, 13)]
 
@@ -376,7 +376,7 @@ def main():
 
     st.dataframe(
         display_yearly_album_leaderboard.drop(columns=["Total_Minutes"]),
-        width="stretch",
+        use_container_width=True,
     )
 
     st.subheader(f"Track Leaderboard for {year_select}{month_label}")
@@ -392,7 +392,7 @@ def main():
 
     st.dataframe(
         display_yearly_track_leaderboard.drop(columns=["Total_Minutes"]),
-        width="stretch",
+        use_container_width=True,
     )
 
     renderFooter()
