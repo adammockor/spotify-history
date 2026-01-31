@@ -1,9 +1,12 @@
-import altair as alt
-import pandas as pd
-import datetime as dt
 import calendar
 
-from data_processing import get_month_weeks, build_date_from_pieces # Import helper functions
+import altair as alt
+import pandas as pd
+
+from data_processing import (  # Import helper functions
+    build_date_from_pieces,
+    get_month_weeks,
+)
 
 
 def create_top_artists_chart(df: pd.DataFrame, corner_radius: int) -> alt.Chart:
@@ -137,6 +140,46 @@ def create_top_tracks_chart(
             sort=top_tracks_list,
         ),
         text=alt.Text("trackName", title="Track"),
+    )
+    return chart + text
+
+
+def create_top_podcasts_chart(df: pd.DataFrame, corner_radius: int) -> alt.Chart:
+    top_podcasts = df.reset_index(drop=True).assign(rank=lambda x: x.index + 1)
+    top_podcasts_list = top_podcasts["podcastName"].to_list()
+    chart = (
+        alt.Chart(top_podcasts)
+        .mark_bar(width=40, cornerRadius=corner_radius)
+        .encode(
+            y=alt.Y(
+                "podcastName",
+                sort=top_podcasts_list,
+                title="Podcast",
+                axis=alt.Axis(labels=False),
+            ),
+            x=alt.X(
+                "hours:Q",
+                title="Total Hours",
+                axis=alt.Axis(format="d"),
+                scale=alt.Scale(domain=(0, df["hours"].max() * 1.2)),
+            ),
+            color=alt.Color(
+                "hours:Q",
+                title="Podcast",
+                sort=top_podcasts_list,
+                scale=alt.Scale(scheme="greens"),
+                legend=None,
+            ),
+            tooltip=[
+                alt.Tooltip("rank", title="Order"),
+                alt.Tooltip("podcastName:N", title="Podcast"),
+                alt.Tooltip("hours:Q", format=",.0f", title="Hours"),
+            ],
+        )
+        .properties(height=500)
+    )
+    text = chart.mark_text(align="left", baseline="middle", dx=3, fontSize=12).encode(
+        text=alt.Text("podcastName:N", title="Podcast")
     )
     return chart + text
 

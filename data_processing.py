@@ -1,10 +1,71 @@
+import calendar
+import datetime as dt
+import json  # Added for handling JSON data
+import os
+from datetime import datetime
+
 import pandas as pd
 import streamlit as st
-from datetime import datetime, timedelta
-import datetime as dt
-import calendar
-import os
-import json # Added for handling JSON data
+
+PODCAST_COLUMNS = (
+    "episode_name",
+    "episode_show_name",
+    "spotify_episode_uri",
+    "episodeName",
+    "episodeShowName",
+    "spotifyEpisodeUri",
+)
+
+
+def add_content_type(df: pd.DataFrame) -> pd.DataFrame:
+    """Annotate rows as music or podcast based on available podcast fields."""
+    df = df.copy()
+    if df.empty:
+        df["contentType"] = "music"
+        return df
+
+    podcast_mask = pd.Series(False, index=df.index)
+    for col in PODCAST_COLUMNS:
+        if col in df.columns:
+            series = df[col]
+            podcast_mask |= series.notna() & (series.astype(str).str.len() > 0)
+
+    df["contentType"] = "music"
+    df.loc[podcast_mask, "contentType"] = "podcast"
+    return df
+
+
+def filter_by_content_type(
+    df: pd.DataFrame,
+    content_type: str,
+) -> pd.DataFrame:
+    """Filter rows by content type: music, podcast, or all."""
+    if content_type not in {"music", "podcast", "all"}:
+        raise ValueError("content_type must be one of: music, podcast, all")
+
+    if content_type == "all":
+        return df.copy()
+
+    return df[df["contentType"] == content_type].copy()
+
+
+def filter_low_activity_artists(
+    df: pd.DataFrame,
+    min_minutes_played_artist: int | None,
+) -> pd.DataFrame:
+    """Remove artists below a minimum total listening time threshold."""
+    if (
+        min_minutes_played_artist is None
+        or df.empty
+        or "artistName" not in df.columns
+        or "minutesPlayed" not in df.columns
+    ):
+        return df.copy()
+
+    artist_minutes = df.groupby("artistName", sort=False)["minutesPlayed"].transform(
+        "sum"
+    )
+    return df[artist_minutes > min_minutes_played_artist].copy()
 
 # Helper function
 def get_month_weeks(year: int) -> list[int]:
@@ -27,6 +88,7 @@ def process_history_df(
     all_data: pd.DataFrame,
     min_ms_played: int = 10000,
     min_minutes_played_artist: int = 5,
+    content_type: str = "music",
 ) -> pd.DataFrame:
     all_data["endTime"] = pd.to_datetime(all_data["endTime"])
     all_data["endTime"] = pd.to_datetime(all_data["endTime"], utc=True)
@@ -40,17 +102,24 @@ def process_history_df(
     all_data["minutesPlayed"] = all_data["msPlayed"] / 60000
 
     all_data = all_data[all_data["msPlayed"] > min_ms_played]
-
-    all_data = all_data.groupby("artistName").filter(
-        lambda x: x["minutesPlayed"].sum() > min_minutes_played_artist
-    )
+    all_data = add_content_type(all_data)
+    all_data = filter_by_content_type(all_data, content_type)
+    if content_type == "music":
+        all_data = filter_low_activity_artists(
+            all_data,
+            min_minutes_played_artist,
+        )
 
     return all_data
 
 
 @st.cache_data()
 def load_and_process_data(
-    uploaded_files: list, change_cols: dict, min_ms_played: int = 10000, min_minutes_played_artist: int = 5
+    uploaded_files: list,
+    change_cols: dict,
+    min_ms_played: int = 10000,
+    min_minutes_played_artist: int = 5,
+    content_type: str = "music",
 ) -> pd.DataFrame:
     if not uploaded_files:
         st.info("Upload your Spotify listening history to see your matches")
@@ -76,6 +145,7 @@ def load_and_process_data(
         all_data,
         min_ms_played=min_ms_played,
         min_minutes_played_artist=min_minutes_played_artist,
+        content_type=content_type,
     )
 
     return all_data
