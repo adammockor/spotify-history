@@ -302,3 +302,30 @@ def compute_tracks_leaderboard(
     )
 
     return leaderboard
+
+def aggregate_podcastShow_minutes(df: pd.DataFrame) -> pd.Series:
+    """
+    Returns minutes played per podcasts, sorted descending.
+    Index: podcastsShowName
+    """
+    return (
+        df.groupby("podcastShowName")["minutesPlayed"]
+        .sum(numeric_only=True)
+        .sort_values(ascending=False)
+    )
+
+
+def compute_top_podcasts(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Returns one row per artist, ordered by hours desc.
+    Columns:
+        - artistName
+        - hours
+        - rank
+    """
+    minutes = aggregate_podcastShow_minutes(df)
+    hours = (minutes / 60).rename("hours")
+
+    df_top_podcasts = hours.reset_index().assign(rank=lambda d: range(1, len(d) + 1))
+
+    return df_top_podcasts

@@ -7,31 +7,10 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 
-PODCAST_COLUMNS = (
-    "episode_name",
-    "episode_show_name",
-    "spotify_episode_uri",
-    "episodeName",
-    "episodeShowName",
-    "spotifyEpisodeUri",
-)
-
 
 def add_content_type(df: pd.DataFrame) -> pd.DataFrame:
     """Annotate rows as music or podcast based on available podcast fields."""
-    df = df.copy()
-    if df.empty:
-        df["contentType"] = "music"
-        return df
-
-    podcast_mask = pd.Series(False, index=df.index)
-    for col in PODCAST_COLUMNS:
-        if col in df.columns:
-            series = df[col]
-            podcast_mask |= series.notna() & (series.astype(str).str.len() > 0)
-
-    df["contentType"] = "music"
-    df.loc[podcast_mask, "contentType"] = "podcast"
+    df["contentType"] = "podcast" if "podcastName" in df.columns else "music"
     return df
 
 
@@ -39,12 +18,9 @@ def filter_by_content_type(
     df: pd.DataFrame,
     content_type: str,
 ) -> pd.DataFrame:
-    """Filter rows by content type: music, podcast, or all."""
-    if content_type not in {"music", "podcast", "all"}:
-        raise ValueError("content_type must be one of: music, podcast, all")
-
-    if content_type == "all":
-        return df.copy()
+    """Filter rows by content type: music, podcast."""
+    if content_type not in {"music", "podcast"}:
+        raise ValueError("content_type must be one of: music, podcast")
 
     return df[df["contentType"] == content_type].copy()
 
@@ -128,8 +104,12 @@ def load_and_process_data(
     listening_history = []
     for file in uploaded_files:
         try:
-            # Decode bytes to string and then load with json.loads
-            file_content = file.read().decode('utf-8')
+            raw = file.getvalue()  # avoids EOF issues on reruns
+            if not raw:
+                st.error(f"{file.name} is empty.")
+                st.stop()
+
+            file_content = raw.decode("utf-8-sig")  # strips BOM if present
             listening_history.append(pd.DataFrame(json.loads(file_content)))
         except Exception as e:
             st.error(f"There was an error reading the file {file.name}: {e}. Please remove the file and try again.")

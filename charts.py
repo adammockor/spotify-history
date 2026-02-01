@@ -146,13 +146,13 @@ def create_top_tracks_chart(
 
 def create_top_podcasts_chart(df: pd.DataFrame, corner_radius: int) -> alt.Chart:
     top_podcasts = df.reset_index(drop=True).assign(rank=lambda x: x.index + 1)
-    top_podcasts_list = top_podcasts["podcastName"].to_list()
+    top_podcasts_list = top_podcasts["podcastShowName"].to_list()
     chart = (
         alt.Chart(top_podcasts)
         .mark_bar(width=40, cornerRadius=corner_radius)
         .encode(
             y=alt.Y(
-                "podcastName",
+                "podcastShowName",
                 sort=top_podcasts_list,
                 title="Podcast",
                 axis=alt.Axis(labels=False),
@@ -172,14 +172,14 @@ def create_top_podcasts_chart(df: pd.DataFrame, corner_radius: int) -> alt.Chart
             ),
             tooltip=[
                 alt.Tooltip("rank", title="Order"),
-                alt.Tooltip("podcastName:N", title="Podcast"),
+                alt.Tooltip("podcastShowName:N", title="Podcast"),
                 alt.Tooltip("hours:Q", format=",.0f", title="Hours"),
             ],
         )
         .properties(height=500)
     )
     text = chart.mark_text(align="left", baseline="middle", dx=3, fontSize=12).encode(
-        text=alt.Text("podcastName:N", title="Podcast")
+        text=alt.Text("podcastShowName:N", title="Podcast")
     )
     return chart + text
 
